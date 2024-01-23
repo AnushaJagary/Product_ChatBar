@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="ISO-8859-1">
+	<link rel="shortcut icon" href="#" />
+	<title>Product List</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<style>
+	#myChart {
+		max-width: 50%;
+		height: auto;
+		margin-bottom: 10px;
+	}
+
+	#productList {
+		max-width: 80%;
+		margin: 0 auto;
+	}
+
+	.productRow {
+		display: none;
+	}
+
+	.productRow:nth-child(-n+5) {
+		display: table-row;
+	}
+
+	#pagination {
+		text-align: center;
+		margin-top: 20px;
+	}
+
+	#pagination button {
+		margin-right: 5px;
+	}
+
+	#pagination a {
+		display: inline-block;
+		margin-right: 5px;
+		padding: 5px 10px;
+		background-color: #007bff;
+		color: #fff;
+		border-radius: 3px;
+		text-decoration: none;
+	}
+
+	#pagination a:hover {
+		background-color: #0056b3;
+	}
+	table th, table td{
+		vertical-align: middle;
+	}
+</style>
+
+
+<h1>Products List</h1>
+<div id="productList" class="mb-4">
+	<table id="productTable" class="table table-bordered table-hover">
+		<thead class="thead-dark">
+			<tr>
+				<th>ID</th>
+				<th>Name</th>
+				<!--<th>Price</th>
+				<th>Path</th>-->
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody id="productBody">
+
+		</tbody>
+	</table>
+	<a href="/create" class="btn btn-success">Create New Product</a></br>
+</div>
+<div id="pagination" class="mt-4">
+</div>
+
+<div class="container mt-4">
+	<div class="btn-group" role="group">
+		<button type="button" class="btn btn-outline-primary" onclick="showBarChart()">Show Bar Chart</button>
+		<button type="button" class="btn btn-outline-primary" onclick="showPieChart()">Show Pie Chart</button>
+	</div>
+	<canvas id="myChart"></canvas>
+</div>
+
+<div class="modal fade" id="productModal" tabindex="-1" role="dialog" aria-labelledby="productModalLabel"
+	aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="productModalLabel">Product Details</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body" id="modalBody">
+				<p>Select a product to view details</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+</div>
+
+<script th:inline="javascript">
+
+	const products = /*[[${products}]]*/[];
+	const productsPerPage = 5;
+	let currentPage = 1;
+
+	function generateModalContent(product) {
+		return `
+	<h5>ID: ${product.id}</h5>
+	<p>Name: ${product.name}</p>
+	<p>Price: ${product.price}</p>
+	<img src="${product.path}" alt="Product Image" style="max-width:100%; height:auto;">
+		`
+
+	}
+	function openProductModal(product) {
+		console.log('Opening modal for product:', product);
+		const modalBody = document.getElementById('modalBody');
+		modalBody.innerHTML = generateModalContent(product);
+		$('#productModal').modal('show');
+	}
+
+
+
+	// Function to render products for the specified page
+	function renderProducts(page) {
+		const productList = document.getElementById('productBody');
+		productList.innerHTML = '';
+		const startIndex = (page - 1) * productsPerPage;
+		const endIndex = Math.min(startIndex + productsPerPage, products.length);
+		for (let i = startIndex; i < endIndex; i++) {
+			const product = products[i];
+
+			const row = `<tr class="productRow">
+                                <td>${product.id}</td>
+                                <td>
+                                    <a href="#" onclick="openProductModal(${JSON.stringify(product).replace(/"/g, '&quot;')})">${product.name}</a>
+                                </td>
+                              <!--  <td>${product.price}</td>
+                                <td>
+                                    <img src="${product.path}" width="50px" height="50px" alt="Product Image">
+                                </td>
+            -->
+					  <td>
+                                    <a href="/show/${product.id}" class="btn btn-primary btn-sm">View</a>
+                                    <a href="/edit/${product.id}" class="btn btn-info btn-sm">Edit</a>
+                                    <a href="/delete/${product.id}" class="btn btn-danger btn-sm">Delete</a>
+                                </td>
+					</tr >`;
+			productList.insertAdjacentHTML('beforeend', row);
+		}
+	}
+	// Function to render pagination links
+	function renderPagination() {
+		const totalPages = Math.ceil(products.length / productsPerPage);
+		const pagination = document.getElementById('pagination');
+		pagination.innerHTML = '';
+		//create next button
+		const nextButton = document.createElement('button');
+		nextButton.textContent = 'Next';
+		nextButton.className = 'btn btn-outline-primary';
+		nextButton.addEventListener('click', function () {
+			if (currentPage < totalPages) {
+				currentPage++;
+				renderProducts(currentPage);
+				renderPagination();
+			}
+		});
+		pagination.appendChild(nextButton);
+		//create Previous button
+		const prevButton = document.createElement('button');
+		prevButton.textContent = 'Previous';
+		prevButton.className = 'btn btn-outline-primary';
+		prevButton.addEventListener('click', function () {
+			if (currentPage > 1) {
+				currentPage--;
+				renderProducts(currentPage);
+				renderPagination();
+			}
+		});
+		pagination.appendChild(prevButton);
+		
+		//show/hide previous and next button
+		if(currentPage===totalPages){
+			nextButton.style.display='none';
+		}
+		if(currentPage===1){
+			prevButton.style.display='none';
+		}
+		
+
+		//show page numbers
+		//for (let i = 1; i <= totalPages; i++) {
+		//	const link = document.createElement('a');
+		//	link.href = "#";
+		//	link.textContent = i;
+		//	link.addEventListener('click', function (event) {
+		//		event.preventDefault();
+		//		currentPage = i;
+		//		renderProducts(currentPage)
+		//	});
+		//	pagination.appendChild(link);
+		//}
+	}
+
+
+
+	// Initial rendering on page load
+	window.onload = function () {
+		renderProducts(currentPage);
+		renderPagination();
+	};
+
+	var productLabels = /*[[${productLabels}]]*/[];
+	var productData = /*[[${productData}]]*/[];
+
+	var ctx = document.getElementById('myChart').getContext('2d');
+	var currentChart;
+	function showBarChart() {
+		if (currentChart) {
+			currentChart.destroy();
+		}
+		currentChart = new Chart(ctx, {
+			type: 'bar',
+			data: {
+				labels: productLabels,
+				datasets: [{
+					label: 'Product Prices',
+					data: productData,
+					backgroundColor: 'rgba(54, 162, 235, 0.5)',
+					borderColor: 'rgba(54, 162, 235, 1)',
+					borderWidth: 1,
+					barThickness: 10,
+					maxBarThickness: 12
+				}]
+			},
+			options: {
+				// Chart options
+			}
+		});
+	}
+	function showPieChart() {
+		if (currentChart) {
+			currentChart.destroy();
+		}
+		currentChart = new Chart(ctx, {
+			type: 'pie',
+			data: {
+				labels: ['Expensive', 'Inexpensive', 'MediumPrduct', 'CheapProduct'],
+				datasets: [{
+					label: 'Product Prices',
+					data: [
+				  /*[[${expensiveCount}]]*/,
+				  /*[[${inexpensiveCount}]]*/,
+				  /*[[${cheapCount}]]*/,
+						/*[[${mediumCount}]]*/
+					],
+					backgroundColor: [
+						'rgba(255, 99, 132, 0.5)', // Red
+						'rgba(54, 162, 235, 0.5)', // Blue
+						'rgba(255, 206, 86, 0.5)', // Yellow
+						'rgba(75, 192, 192, 0.5)',
+
+					],
+					borderColor: [
+						'rgba(255, 99, 132, 1)',
+						'rgba(54, 162, 235, 1)'
+
+					],
+					borderWidth: 1
+				}]
+			},
+			options: {
+
+			}
+		});
+	}
+
+
+</script>
+</body>
+
+</html>

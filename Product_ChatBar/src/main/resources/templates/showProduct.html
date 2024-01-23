@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="ISO-8859-1">
+	<title>Show Product</title>
+			<link rel="shortcut icon" href="#" />
+
+</head>
+
+<body>
+	<h1> Product Details</h1>
+	 <div th:if="${product}">
+	<p>ID:<span th:text="${product.id}"></span></p>
+	<p>Name:<span th:text="${product.name}"></span></p>
+	<p>Price:<span th:text="${product.price}"></span></p>
+	 </div>
+	<a href="/">Back to List</a>
+</body>
+
+</html>
